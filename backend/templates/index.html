@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Decision-to-Action Extractor & Action Tracking System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            hospital: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-white">
+
+  <div className="flex h-screen overflow-hidden">
+    <!-- Main Flex Layout -->
+    <div class="flex w-full h-screen">
+      
+      <!-- Sidebar -->
+      <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen select-none shrink-0">
+        <!-- Brand Header -->
+        <div class="p-5 border-b border-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-white font-bold text-lg">
+            ⚕️
+          </div>
+          <div>
+            <h1 class="font-bold text-slate-100 text-sm tracking-tight leading-tight">MedOps Intelligence</h1>
+            <p class="text-xs text-cyan-400 font-medium">Decision-to-Action OS</p>
+          </div>
+        </div>
+
+        <!-- Quick Demo Trigger -->
+        <div class="p-3">
+          <button onclick="openDemoModal()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 font-medium text-xs flex items-center justify-between transition-all group shadow-sm">
+            <span class="flex items-center gap-2">
+              <span class="animate-pulse">▶</span> Interactive Demo Mode
+            </span>
+            <span class="text-[10px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded font-mono">LIVE</span>
+          </button>
+        </div>
+
+        <!-- Navigation List -->
+        <nav class="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-sm">
+            <span class="flex items-center gap-2.5">📊 Dashboard</span>
+          </button>
+          <button onclick="switchTab('meetings')" id="nav-meetings" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">📄 Meetings</span>
+          </button>
+          <button onclick="switchTab('decisions')" id="nav-decisions" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">🛡️ Decision Review</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 font-semibold uppercase">High Impact</span>
+          </button>
+          <button onclick="switchTab('tasks')" id="nav-tasks" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">📋 Task Tracker</span>
+          </button>
+          <button onclick="switchTab('chat')" id="nav-chat" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">💬 Chat Updates</span>
+          </button>
+          <button onclick="switchTab('evidence')" id="nav-evidence" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">🔍 Evidence Inspector</span>
+          </button>
+          <button onclick="switchTab('events')" id="nav-events" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">⚡ Event Monitor</span>
+          </button>
+          <button onclick="switchTab('audit')" id="nav-audit" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">📜 Audit History</span>
+          </button>
+          <button onclick="switchTab('evaluation')" id="nav-evaluation" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">📈 Evaluation</span>
+          </button>
+          <button onclick="switchTab('risks')" id="nav-risks" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">⚠️ Risk Register</span>
+          </button>
+          <button onclick="switchTab('privacy')" id="nav-privacy" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">🔒 Privacy & Safety</span>
+          </button>
+          <button onclick="switchTab('docs')" id="nav-docs" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+            <span class="flex items-center gap-2.5">📘 Guide & Architecture</span>
+          </button>
+        </nav>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/60">
+          <div class="flex items-center gap-2 text-[11px] text-slate-400">
+            <span class="text-emerald-400 font-bold">🔒 Synthetic Data Secured</span>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1 leading-tight">No real patient or hospital records stored.</p>
+        </div>
+      </aside>
+
+      <!-- Main Area -->
+      <div class="flex-1 flex flex-col h-screen overflow-y-auto">
+        
+        <!-- Header -->
+        <header class="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 shrink-0">
+          <div class="flex items-center gap-4">
+            <span class="text-xs font-semibold text-slate-300">Department Scope:</span>
+            <select id="dept-filter" onchange="loadAllData()" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="All Departments">All Departments</option>
+              <option value="Emergency Department">Emergency Department</option>
+              <option value="ICU">ICU</option>
+              <option value="Infection Control">Infection Control</option>
+              <option value="Nursing">Nursing</option>
+              <option value="Pharmacy">Pharmacy</option>
+              <option value="Laboratory">Laboratory</option>
+              <option value="Administration">Administration</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full text-xs text-emerald-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="font-mono text-[11px]">Idempotent Engine: ONLINE</span>
+            </div>
+            <button onclick="runQuickDemo()" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/20 active:scale-95 transition-all">
+              ✨ Run Demo Workflow
+            </button>
+          </div>
+        </header>
+
+        <!-- View Content Containers -->
+        <main class="p-6 flex-1 space-y-6">
+
+          <!-- 1. DASHBOARD VIEW -->
+          <div id="tab-dashboard" class="tab-content space-y-6">
+            <div class="p-6 rounded-2xl bg-gradient-to-r from-cyan-950 via-slate-900 to-slate-950 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div class="text-cyan-400 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                  ⚡ Hospital Operational Decision-to-Action Pipeline
+                </div>
+                <h2 class="text-xl font-extrabold text-white mt-1">Operational Command & Tracking Dashboard</h2>
+                <p class="text-xs text-slate-400 mt-1 max-w-2xl">
+                  Real-time tracking from unstructured meeting transcripts and shift chat messages into structured, evidence-verified actionable tasks with human-in-the-loop safety gating.
+                </p>
+              </div>
+              <button onclick="switchTab('decisions')" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-all">
+                ⚠️ Review Pending Decisions
+              </button>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="p-4 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 glass-panel">
+                <span class="text-xs font-semibold text-slate-300 uppercase">Total Decisions</span>
+                <div class="mt-2 text-2xl font-bold text-white font-mono" id="kpi-decisions">52</div>
+                <p class="text-[11px] text-slate-400 mt-1">Extracted from transcripts</p>
+              </div>
+              <div class="p-4 rounded-xl bg-gradient-to-br from-blue-500/20 to-sky-500/10 border border-blue-500/30 glass-panel">
+                <span class="text-xs font-semibold text-slate-300 uppercase">Actions Created</span>
+                <div class="mt-2 text-2xl font-bold text-white font-mono" id="kpi-tasks">42</div>
+                <p class="text-[11px] text-slate-400 mt-1" id="kpi-conversion">96% Conversion Rate</p>
+              </div>
+              <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 glass-panel">
+                <span class="text-xs font-semibold text-slate-300 uppercase">Tasks Completed</span>
+                <div class="mt-2 text-2xl font-bold text-white font-mono" id="kpi-completed">16</div>
+                <p class="text-[11px] text-slate-400 mt-1">Verified via chat updates</p>
+              </div>
+              <div class="p-4 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/30 glass-panel">
+                <span class="text-xs font-semibold text-slate-300 uppercase">High Impact Protocols</span>
+                <div class="mt-2 text-2xl font-bold text-white font-mono" id="kpi-highimpact">35</div>
+                <p class="text-[11px] text-slate-400 mt-1">Mandatory Human Gated</p>
+              </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="p-5 rounded-xl glass-panel border border-slate-800">
+                <h3 class="text-sm font-bold text-slate-200 mb-4">Task Status Distribution</h3>
+                <div class="h-64 flex items-center justify-center">
+                  <canvas id="chartStatus"></canvas>
+                </div>
+              </div>
+              <div class="p-5 rounded-xl glass-panel border border-slate-800">
+                <h3 class="text-sm font-bold text-slate-200 mb-4">Actions by Department</h3>
+                <div class="h-64 flex items-center justify-center">
+                  <canvas id="chartDept"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. MEETINGS VIEW -->
+          <div id="tab-meetings" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Hospital Meeting Transcripts</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div class="space-y-2 max-h-[70vh] overflow-y-auto" id="meetings-list"></div>
+              <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4" id="meeting-detail">
+                <p class="text-slate-400 text-xs">Select a meeting transcript from the left sidebar to view verbatim details.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. DECISIONS REVIEW VIEW -->
+          <div id="tab-decisions" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-bold text-slate-100">Decision Review Queue & Human Approval Gating</h2>
+                <p class="text-xs text-slate-400">High-impact actions require explicit human confirmation before task activation.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="decisions-grid"></div>
+          </div>
+
+          <!-- 4. TASK TRACKER VIEW -->
+          <div id="tab-tasks" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Hospital Action & Task Tracker</h2>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl" id="tasks-container">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950 text-slate-400 font-semibold uppercase tracking-wider text-[10px] border-b border-slate-800">
+                    <tr>
+                      <th class="p-3.5">Task ID & Directive</th>
+                      <th class="p-3.5">Assigned Owner</th>
+                      <th className="p-3.5">Department</th>
+                      <th class="p-3.5">Deadline</th>
+                      <th class="p-3.5">Priority & Risk</th>
+                      <th class="p-3.5">Status</th>
+                      <th class="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tasks-tbody" class="divide-y divide-slate-800/60"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. CHAT FEED VIEW -->
+          <div id="tab-chat" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Shift Communication & Completion Detection Feed</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col h-[70vh]">
+                <div class="flex-1 overflow-y-auto space-y-3 pr-2" id="chat-messages-list"></div>
+                <form onsubmit="handleSendChat(event)" class="mt-4 pt-3 border-t border-slate-800 flex items-center gap-2">
+                  <select id="chat-sender" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-200">
+                    <option value="Nurse Priya">Nurse Priya</option>
+                    <option value="Dr. Ravi">Dr. Ravi</option>
+                    <option value="Dr. Kumar">Dr. Kumar</option>
+                    <option value="Pharmacy Lead Mark">Pharmacy Lead Mark</option>
+                    <option value="Nurse James">Nurse James</option>
+                  </select>
+                  <input type="text" id="chat-input" required placeholder="Type update (e.g. 'Night shift infection training completed')..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200">
+                  <button type="submit" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">Send</button>
+                </form>
+              </div>
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Tasks Open for Completion</h3>
+                <div class="space-y-2 max-h-[60vh] overflow-y-auto" id="chat-tasks-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. EVIDENCE INSPECTOR VIEW -->
+          <div id="tab-evidence" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Evidence-Based Explainability Inspector</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div class="space-y-2 max-h-[70vh] overflow-y-auto" id="evidence-selector"></div>
+              <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6" id="evidence-detail"></div>
+            </div>
+          </div>
+
+          <!-- 7. EVENT MONITOR VIEW -->
+          <div id="tab-events" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-bold text-slate-100">Idempotent Event Monitor & State Recovery Pipeline</h2>
+                <p class="text-xs text-slate-400">Verifies sequence hash deduplication and out-of-order event recovery</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="injectDuplicate()" class="px-3.5 py-2 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold">Test Duplicate Event</button>
+                <button onclick="injectOutOfOrder()" class="px-3.5 py-2 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold">Test Out-of-Order Recovery</button>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 rounded-xl glass-panel border border-slate-800">
+                <span class="text-xs font-bold text-cyan-400">1. INPUT EVENT ORDER</span>
+                <div class="space-y-1.5 font-mono text-[11px] mt-2">
+                  <div class="p-2 rounded bg-slate-950 text-purple-300 border border-purple-900/60">1. TaskCompleted (10:00 AM)</div>
+                  <div class="p-2 rounded bg-slate-950 text-cyan-300 border border-cyan-900/60">2. TaskCreated (10:05 AM)</div>
+                  <div class="p-2 rounded bg-slate-950 text-emerald-300 border border-emerald-900/60">3. TaskAssigned (10:10 AM)</div>
+                </div>
+              </div>
+              <div class="p-4 rounded-xl glass-panel border border-slate-800">
+                <span class="text-xs font-bold text-cyan-400">2. PROCESSED RECONCILIATION</span>
+                <div class="space-y-1 text-xs text-slate-300 mt-2">
+                  <p>• Completed event initializes stub task, sets state Completed.</p>
+                  <p>• Late Created event attaches metadata without status regression.</p>
+                  <p>• Late Assigned event assigns owner cleanly.</p>
+                </div>
+              </div>
+              <div class="p-4 rounded-xl glass-panel border border-emerald-500/40 bg-emerald-950/20 text-center">
+                <span class="text-xs font-bold text-emerald-400">3. FINAL STATE VERDICT</span>
+                <div class="text-xl font-extrabold text-white font-mono mt-2">COMPLETED</div>
+                <p class="text-[11px] text-emerald-300 font-bold mt-1">✓ State recovered correctly</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+              <div class="p-4 border-b border-slate-800 font-bold text-xs">Live Event Ingestion Log</div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                  <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-[10px]">
+                    <tr><th class="p-3">Sequence</th><th class="p-3">Event Hash ID</th><th class="p-3">Type</th><th class="p-3">Source</th><th class="p-3">Task ID</th></tr>
+                  </thead>
+                  <tbody id="events-tbody" class="divide-y divide-slate-800/60"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8. AUDIT HISTORY VIEW -->
+          <div id="tab-audit" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Immutable Audit History & Override Log</h2>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-950 text-slate-400 font-mono text-[10px]">
+                    <tr><th class="p-3">Timestamp</th><th class="p-3">Reviewer</th><th class="p-3">Target ID</th><th class="p-3">Field</th><th class="p-3">Original</th><th class="p-3">New Value</th><th class="p-3">Reason</th></tr>
+                  </thead>
+                  <tbody id="audit-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 9. EVALUATION BENCHMARK VIEW -->
+          <div id="tab-evaluation" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Evaluation Benchmark: Baseline vs Target vs Measured Results</h2>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl p-4">
+              <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-[10px]">
+                  <tr><th class="p-3">Operational Metric</th><th class="p-3">Manual Baseline</th><th class="p-3">Target</th><th class="p-3">Measured Result</th><th class="p-3">Status</th></tr>
+                </thead>
+                <tbody id="evaluation-tbody" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl space-y-3">
+              <h3 class="font-bold text-sm text-slate-200">Categorized Error Analysis Report</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-[10px]">
+                    <tr><th class="p-3">Error ID</th><th class="p-3">Input Text</th><th class="p-3">System Output</th><th class="p-3">Expected Truth</th><th class="p-3">Corrective Improvement</th></tr>
+                  </thead>
+                  <tbody id="error-analysis-tbody" class="divide-y divide-slate-800/60"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 10. RISKS VIEW -->
+          <div id="tab-risks" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Hospital Operational Risk Register</h2>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 text-[10px]">
+                  <tr><th class="p-3">Risk ID</th><th class="p-3">Identified Operational Risk</th><th class="p-3">Impact</th><th class="p-3">Likelihood</th><th class="p-3">Active Software Safety Mitigation</th></tr>
+                </thead>
+                <tbody id="risks-tbody" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 11. PRIVACY VIEW -->
+          <div id="tab-privacy" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Data Privacy & Synthetic Data Policy</h2>
+            <div class="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-950 border border-emerald-500/40 space-y-3">
+              <h3 class="font-extrabold text-sm text-emerald-400">SYNTHETIC DATA GUARANTEE</h3>
+              <ul class="space-y-2 text-xs text-slate-200" id="privacy-guarantees"></ul>
+            </div>
+          </div>
+
+          <!-- 12. DOCS VIEW -->
+          <div id="tab-docs" class="tab-content hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-100">Architecture Diagram & User Guide</h2>
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+              <h3 class="font-bold text-sm text-cyan-300">System Flow Diagram</h3>
+              <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300">
+                Meeting Transcript / Chat Stream → NLP Extractor → Evidence Quote & Confidence Score → Human Approval Gateway → Task Database → Idempotent Event Processor → Dashboard
+              </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-3">
+              <h3 class="font-bold text-sm text-slate-200">10-Step Evaluation Walkthrough</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="guide-steps"></div>
+            </div>
+          </div>
+
+        </main>
+      </div>
+    </div>
+
+    <!-- Interactive Demo Modal -->
+    <div id="demo-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeDemoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold">✕</button>
+        <h2 class="font-bold text-slate-100 text-base">Interactive Demo & Edge-Case Injector</h2>
+        <p class="text-xs text-slate-400 mb-4">Demonstrate end-to-end hospital workflow & idempotent state recovery</p>
+
+        <div class="p-4 rounded-xl bg-gradient-to-r from-cyan-950 to-blue-950 border border-cyan-500/40 mb-6 flex items-center justify-between">
+          <div>
+            <h3 class="font-bold text-sm text-cyan-300">Run End-to-End Workflow Scenario</h3>
+            <p class="text-xs text-slate-300 mt-0.5">Meeting → Decision → High-Impact Warning → Human Approval → Task → Chat Completion → Completed</p>
+          </div>
+          <button onclick="runQuickDemo()" class="px-4 py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-extrabold text-xs shrink-0">RUN FULL FLOW</button>
+        </div>
+
+        <h4 class="text-xs font-bold uppercase text-slate-400 mb-3">Inject Edge Cases into Live System</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <button onclick="injectDuplicate()" class="p-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left">
+            <span class="text-amber-400 font-bold text-xs block">EDGE CASE 1: Duplicate Event</span>
+            <span class="text-[11px] text-slate-400">Sends TaskCompleted twice to verify single completion state.</span>
+          </button>
+          <button onclick="injectOutOfOrder()" class="p-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left">
+            <span class="text-purple-400 font-bold text-xs block">EDGE CASE 2: Out-of-Order Event</span>
+            <span class="text-[11px] text-slate-400">Sends Completed BEFORE Created and Assigned to test recovery.</span>
+          </button>
+          <button onclick="injectAmbiguous()" class="p-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left">
+            <span class="text-blue-400 font-bold text-xs block">EDGE CASE 3: Ambiguous Owner</span>
+            <span class="text-[11px] text-slate-400">Injects 'someone from night shift' statement requiring review.</span>
+          </button>
+          <button onclick="injectConflict()" class="p-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left">
+            <span class="text-red-400 font-bold text-xs block">EDGE CASE 5: Conflicting Owner</span>
+            <span class="text-[11px] text-slate-400">Injects chat conflict between Dr. Ravi and Dr. Kumar.</span>
+          </button>
+        </div>
+
+        <div id="demo-log-container" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+          <span class="text-cyan-400 font-bold block mb-2">Execution Payload Log:</span>
+          <pre id="demo-log" class="font-mono text-[11px] text-emerald-300 overflow-x-auto p-2 bg-slate-900 rounded max-h-48"></pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main JavaScript App Logic -->
+  <script>
+    let currentTab = 'dashboard';
+    let chartStatusInstance = null;
+    let chartDeptInstance = null;
+
+    async function fetchAPI(url, options = {}) {
+      try {
+        const res = await fetch(url, options);
+        return await res.json();
+      } catch(e) {
+        console.error("API error:", e);
+        return null;
+      }
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-cyan-500/10', 'text-cyan-400', 'border-cyan-500/30');
+        el.classList.add('text-slate-400', 'border-transparent');
+      });
+
+      const activeContent = document.getElementById('tab-' + tabId);
+      if (activeContent) activeContent.classList.remove('hidden');
+
+      const activeNav = document.getElementById('nav-' + tabId);
+      if (activeNav) {
+        activeNav.classList.remove('text-slate-400', 'border-transparent');
+        activeNav.classList.add('bg-cyan-500/10', 'text-cyan-400', 'border-cyan-500/30');
+      }
+
+      loadAllData();
+    }
+
+    function openDemoModal() {
+      document.getElementById('demo-modal').classList.remove('hidden');
+    }
+
+    function closeDemoModal() {
+      document.getElementById('demo-modal').classList.add('hidden');
+    }
+
+    async function loadAllData() {
+      const dept = document.getElementById('dept-filter').value;
+      const deptParam = dept === 'All Departments' ? '' : '?department=' + encodeURIComponent(dept);
+
+      const [decisions, tasks, meetings, chats, events, audit, evaluation, risks, privacy, guide] = await Promise.all([
+        fetchAPI('/api/decisions' + deptParam),
+        fetchAPI('/api/tasks' + deptParam),
+        fetchAPI('/api/meetings'),
+        fetchAPI('/api/chat'),
+        fetchAPI('/api/events'),
+        fetchAPI('/api/audit'),
+        fetchAPI('/api/evaluation'),
+        fetchAPI('/api/docs-info/risks'),
+        fetchAPI('/api/docs-info/privacy'),
+        fetchAPI('/api/docs-info/user-guide')
+      ]);
+
+      if (decisions) renderDecisions(decisions);
+      if (tasks) renderTasks(tasks);
+      if (meetings) renderMeetings(meetings);
+      if (chats && tasks) renderChat(chats, tasks);
+      if (decisions) renderEvidence(decisions);
+      if (events) renderEvents(events);
+      if (audit) renderAudit(audit);
+      if (evaluation) renderEvaluation(evaluation);
+      if (risks) renderRisks(risks.risks);
+      if (privacy) renderPrivacy(privacy);
+      if (guide) renderGuide(guide.steps);
+
+      if (decisions && tasks) updateDashboard(decisions, tasks);
+    }
+
+    function updateDashboard(decisions, tasks) {
+      document.getElementById('kpi-decisions').innerText = decisions.length;
+      document.getElementById('kpi-tasks').innerText = tasks.length;
+      const completed = tasks.filter(t => t.status === 'Completed').length;
+      document.getElementById('kpi-completed').innerText = completed;
+      const highImpact = decisions.filter(d => d.is_high_impact).length;
+      document.getElementById('kpi-highimpact').innerText = highImpact;
+
+      // Render Charts
+      const completedCount = completed;
+      const inProgressCount = tasks.filter(t => t.status === 'In Progress').length;
+      const pendingCount = tasks.filter(t => t.status === 'Pending').length;
+      const rejectedCount = tasks.filter(t => t.status === 'Rejected').length;
+
+      const ctx1 = document.getElementById('chartStatus');
+      if (ctx1) {
+        if (chartStatusInstance) chartStatusInstance.destroy();
+        chartStatusInstance = new Chart(ctx1, {
+          type: 'doughnut',
+          data: {
+            labels: ['Completed', 'In Progress', 'Pending', 'Rejected'],
+            datasets: [{
+              data: [completedCount, inProgressCount, pendingCount, rejectedCount],
+              backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#ef4444']
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } } }
+        });
+      }
+
+      const deptCounts = {};
+      tasks.forEach(t => deptCounts[t.department] = (deptCounts[t.department] || 0) + 1);
+      const ctx2 = document.getElementById('chartDept');
+      if (ctx2) {
+        if (chartDeptInstance) chartDeptInstance.destroy();
+        chartDeptInstance = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: Object.keys(deptCounts),
+            datasets: [{
+              label: 'Tasks',
+              data: Object.values(deptCounts),
+              backgroundColor: '#0284c7'
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8' } } } }
+        });
+      }
+    }
+
+    function renderDecisions(decisions) {
+      const container = document.getElementById('decisions-grid');
+      container.innerHTML = decisions.map(d => `
+        <div class="rounded-xl border ${d.is_high_impact ? 'border-amber-500/40 shadow-lg' : 'border-slate-800'} p-5 glass-panel">
+          ${d.is_high_impact ? `
+            <div class="mb-3 p-2.5 rounded bg-amber-500/20 border border-amber-500/40 flex items-center justify-between text-amber-300 text-xs font-bold">
+              <span>⚠️ HIGH-IMPACT PROTOCOL DECISION</span>
+              <span class="text-[10px] bg-amber-500/30 px-2 py-0.5 rounded font-mono">HUMAN GATED</span>
+            </div>
+          ` : ''}
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">${d.id}</span>
+              <h3 class="font-bold text-slate-100 text-sm mt-1">${d.decision_title}</h3>
+            </div>
+            <span class="text-lg font-mono font-bold text-cyan-400">${d.confidence_score}%</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 my-3 bg-slate-900 p-2.5 rounded text-xs border border-slate-800">
+            <div><span class="text-[10px] text-slate-400 block uppercase">Action</span><span class="font-semibold text-slate-200">${d.extracted_action}</span></div>
+            <div><span class="text-[10px] text-slate-400 block uppercase">Owner</span><span class="font-semibold ${d.extracted_owner === 'Unknown' ? 'text-amber-400 font-bold' : 'text-slate-200'}">${d.extracted_owner}</span></div>
+            <div><span class="text-[10px] text-slate-400 block uppercase">Deadline</span><span class="font-semibold text-slate-200">${d.extracted_deadline}</span></div>
+          </div>
+
+          <div class="mb-3 p-2.5 bg-slate-950 rounded border border-slate-800">
+            <span class="text-[10px] text-cyan-400 uppercase font-bold">Transcript Evidence Quote</span>
+            <p class="text-xs italic text-slate-300 mt-1">${d.evidence_quote}</p>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+            <span class="text-xs text-slate-400">Status: <b class="text-cyan-400">${d.status}</b></span>
+            <div class="flex gap-2">
+              <button onclick="approveDecision('${d.id}')" ${d.status === 'Approved' ? 'disabled' : ''} class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded disabled:opacity-50">APPROVE</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderTasks(tasks) {
+      const tbody = document.getElementById('tasks-tbody');
+      tbody.innerHTML = tasks.map(t => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="p-3.5"><span class="font-mono text-cyan-400 font-bold me-2">${t.id}</span><b>${t.action}</b></td>
+          <td class="p-3.5">${t.owner}</td>
+          <td class="p-3.5 text-slate-400">${t.department}</td>
+          <td class="p-3.5">${t.deadline}</td>
+          <td class="p-3.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${t.priority === 'High' ? 'bg-red-500/20 text-red-300' : 'bg-slate-800'}">${t.priority}</span></td>
+          <td class="p-3.5"><span class="px-2 py-1 rounded text-[11px] font-bold ${t.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300'}">${t.status}</span></td>
+          <td class="p-3.5 text-right"><button onclick="updateTaskStatus('${t.id}', 'Completed')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] rounded">Complete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderMeetings(meetings) {
+      const list = document.getElementById('meetings-list');
+      list.innerHTML = meetings.map((m, idx) => `
+        <div onclick="selectMeeting(${idx})" class="p-3 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 cursor-pointer">
+          <span class="text-[10px] font-mono text-cyan-400">${m.id}</span>
+          <h4 class="font-bold text-xs text-slate-200">${m.title}</h4>
+          <span class="text-[10px] text-slate-400 block mt-1">${m.department} | Chair: ${m.chair}</span>
+        </div>
+      `).join('');
+      if (meetings.length > 0) selectMeeting(0, meetings);
+    }
+
+    function selectMeeting(idx, list = null) {
+      fetchAPI('/api/meetings').then(meetings => {
+        const m = meetings[idx];
+        if (!m) return;
+        document.getElementById('meeting-detail').innerHTML = `
+          <div class="border-b border-slate-800 pb-3">
+            <span class="font-mono text-cyan-400 font-bold text-xs">${m.id}</span>
+            <h3 class="text-base font-bold text-white mt-1">${m.title}</h3>
+            <p class="text-xs text-slate-400 mt-1">${m.department} | Chair: ${m.chair} | Date: ${m.date}</p>
+          </div>
+          <div><h4 class="text-xs font-bold text-slate-400 uppercase mb-1">Verbatim Transcript</h4><pre class="bg-slate-950 p-4 rounded border border-slate-800 text-xs font-mono text-slate-300 whitespace-pre-line">${m.transcript}</pre></div>
+        `;
+      });
+    }
+
+    function renderChat(messages, tasks) {
+      const list = document.getElementById('chat-messages-list');
+      list.innerHTML = messages.map(msg => `
+        <div class="p-3 rounded-lg border ${msg.msg_type === 'completion_update' ? 'bg-emerald-950/40 border-emerald-500/40' : 'bg-slate-950 border-slate-800'} text-xs">
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mb-1"><b>${msg.sender}</b><span>${new Date(msg.timestamp).toLocaleTimeString()}</span></div>
+          <p class="text-slate-200">${msg.content}</p>
+          ${msg.msg_type === 'completion_update' ? '<span class="text-[10px] text-emerald-400 font-bold block mt-1">✓ AUTOMATIC COMPLETION DETECTED</span>' : ''}
+        </div>
+      `).join('');
+
+      const openTasks = tasks.filter(t => t.status !== 'Completed');
+      document.getElementById('chat-tasks-list').innerHTML = openTasks.map(t => `
+        <div onclick="document.getElementById('chat-input').value='Update: ${t.action} completed.'" class="p-2.5 rounded bg-slate-950 border border-slate-800 cursor-pointer hover:border-cyan-500 text-xs">
+          <span class="font-mono text-cyan-400 font-bold text-[10px]">${t.id}</span>
+          <p class="font-semibold text-slate-200">${t.action}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderEvidence(decisions) {
+      const sel = document.getElementById('evidence-selector');
+      sel.innerHTML = decisions.map((d, idx) => `
+        <div onclick="selectEvidence(${idx})" class="p-3 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer text-xs">
+          <span class="font-mono text-cyan-400 font-bold text-[10px]">${d.id}</span>
+          <p class="font-bold text-slate-200">${d.decision_title}</p>
+        </div>
+      `).join('');
+      if (decisions.length > 0) selectEvidence(0);
+    }
+
+    function selectEvidence(idx) {
+      fetchAPI('/api/decisions').then(decisions => {
+        const d = decisions[idx];
+        if (!d) return;
+        document.getElementById('evidence-detail').innerHTML = `
+          <div class="flex justify-between border-b border-slate-800 pb-3">
+            <div><span class="font-mono text-cyan-400 font-bold text-xs">${d.id}</span><h3 class="font-bold text-white text-base">${d.decision_title}</h3></div>
+            <span class="text-xl font-mono font-bold text-cyan-400">${d.confidence_score}%</span>
+          </div>
+          <div class="p-3 bg-slate-950 rounded border border-slate-800"><span class="text-[10px] font-bold text-cyan-400 uppercase">Transcript Evidence</span><blockquote class="italic text-slate-200 text-xs mt-1 font-serif">"${d.evidence_quote}"</blockquote></div>
+          <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono text-emerald-300 whitespace-pre-line">${d.rules_reason}</div>
+        `;
+      });
+    }
+
+    function renderEvents(events) {
+      const tbody = document.getElementById('events-tbody');
+      tbody.innerHTML = events.slice(0, 15).map(e => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="p-3 text-cyan-400">#${e.sequence_num}</td>
+          <td class="p-3 font-bold">${e.event_id}</td>
+          <td class="p-3">${e.event_type}</td>
+          <td class="p-3 text-slate-400">${e.source}</td>
+          <td class="p-3 text-amber-300">${e.task_id || 'N/A'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAudit(audit) {
+      const tbody = document.getElementById('audit-tbody');
+      tbody.innerHTML = audit.map(a => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="p-3 text-slate-400">${new Date(a.timestamp).toLocaleString()}</td>
+          <td class="p-3 font-bold text-cyan-300">${a.reviewer}</td>
+          <td class="p-3 text-amber-300">${a.decision_id || a.task_id}</td>
+          <td class="p-3 uppercase font-bold">${a.field_changed}</td>
+          <td class="p-3 text-red-400 line-through">${a.original_value || 'None'}</td>
+          <td class="p-3 text-emerald-400 font-bold">${a.new_value}</td>
+          <td class="p-3 font-sans italic text-slate-300">"${a.reason}"</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderEvaluation(evaluation) {
+      const tbody = document.getElementById('evaluation-tbody');
+      tbody.innerHTML = evaluation.metrics.map(m => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="p-3 font-sans font-bold">${m.metric}</td>
+          <td class="p-3 text-slate-400">${m.baseline}${m.unit}</td>
+          <td class="p-3 text-amber-300">≥ ${m.target}${m.unit}</td>
+          <td class="p-3 font-extrabold text-cyan-400">${m.measured}${m.unit}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">✓ PASSED</span></td>
+        </tr>
+      `).join('');
+
+      const errTbody = document.getElementById('error-analysis-tbody');
+      errTbody.innerHTML = evaluation.error_analysis.map(e => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="p-3 font-mono font-bold text-cyan-400">${e.id}<br><span class="text-amber-300 font-sans">${e.error_category}</span></td>
+          <td class="p-3 italic text-slate-300">${e.input_text}</td>
+          <td class="p-3 font-mono text-red-300 text-[11px]">${e.system_output}</td>
+          <td class="p-3 font-mono text-emerald-300 text-[11px]">${e.expected_output}</td>
+          <td class="p-3 text-slate-400 text-xs">${e.possible_improvement}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRisks(risks) {
+      const tbody = document.getElementById('risks-tbody');
+      tbody.innerHTML = risks.map(r => `
+        <tr class="hover:bg-slate-800/40 font-mono text-[11px]">
+          <td class="p-3.5 font-bold text-cyan-400">${r.id}</td>
+          <td class="p-3.5 font-sans font-bold text-slate-200">${r.risk}</td>
+          <td class="p-3.5"><span class="px-2 py-0.5 rounded ${r.impact === 'Critical' ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-amber-500/20 text-amber-300'}">${r.impact}</span></td>
+          <td class="p-3.5 text-slate-400">${r.likelihood}</td>
+          <td class="p-3.5 font-sans text-slate-300">${r.mitigation}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderPrivacy(privacy) {
+      document.getElementById('privacy-guarantees').innerHTML = privacy.guarantees.map(g => `
+        <li class="flex items-start gap-2"><span>✓</span><span>${g}</span></li>
+      `).join('');
+    }
+
+    function renderGuide(steps) {
+      document.getElementById('guide-steps').innerHTML = steps.map(s => `
+        <div class="p-4 rounded bg-slate-950 border border-slate-800 flex gap-3">
+          <div class="w-6 h-6 rounded bg-cyan-950 text-cyan-400 font-bold font-mono text-xs flex items-center justify-center shrink-0">${s.step}</div>
+          <div><h4 class="font-bold text-xs text-slate-200">${s.title}</h4><p class="text-xs text-slate-400 mt-1">${s.desc}</p></div>
+        </div>
+      `).join('');
+    }
+
+    async function approveDecision(id) {
+      await fetchAPI('/api/decisions/' + id + '/approve', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ reviewer: 'Ops Lead' }) });
+      loadAllData();
+    }
+
+    async function updateTaskStatus(id, status) {
+      await fetchAPI('/api/tasks/' + id, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status }) });
+      loadAllData();
+    }
+
+    async function handleSendChat(e) {
+      e.preventDefault();
+      const sender = document.getElementById('chat-sender').value;
+      const content = document.getElementById('chat-input').value;
+      await fetchAPI('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ sender, content }) });
+      document.getElementById('chat-input').value = '';
+      loadAllData();
+    }
+
+    async function runQuickDemo() {
+      const res = await fetchAPI('/api/demo/run-flow', { method: 'POST' });
+      showDemoLog(res);
+      loadAllData();
+    }
+
+    async function injectDuplicate() {
+      const res = await fetchAPI('/api/events/simulate-duplicate', { method: 'POST' });
+      showDemoLog(res);
+      loadAllData();
+    }
+
+    async function injectOutOfOrder() {
+      const res = await fetchAPI('/api/events/simulate-out-of-order', { method: 'POST' });
+      showDemoLog(res);
+      loadAllData();
+    }
+
+    async function injectAmbiguous() {
+      const res = await fetchAPI('/api/demo/inject-ambiguous', { method: 'POST' });
+      showDemoLog(res);
+      loadAllData();
+    }
+
+    async function injectConflict() {
+      const res = await fetchAPI('/api/demo/inject-conflict', { method: 'POST' });
+      showDemoLog(res);
+      loadAllData();
+    }
+
+    function showDemoLog(data) {
+      document.getElementById('demo-log-container').classList.remove('hidden');
+      document.getElementById('demo-log').innerText = JSON.stringify(data, null, 2);
+    }
+
+    // Initialize on Page Load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+    });
+  </script>
+</body>
+</html>
