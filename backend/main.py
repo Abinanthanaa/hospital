@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.database import engine, Base, SessionLocal
 from backend.routes import (
     meetings, decisions, tasks, chat, 
-    events, audit, evaluation, demo, docs_info, fhir, analytics
+    events, audit, evaluation, demo, docs_info, fhir, analytics, auth_routes
 )
 from backend.services.seed_data import seed_database
 from backend.models import Meeting
@@ -39,6 +39,7 @@ app.include_router(demo.router)
 app.include_router(docs_info.router)
 app.include_router(fhir.router)
 app.include_router(analytics.router)
+app.include_router(auth_routes.router)
 
 @app.on_event("startup")
 def startup_db_seed():
